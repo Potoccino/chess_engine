@@ -1,8 +1,8 @@
 
 
 pub mod chess {
-    use std::{fmt::{self}, vec};
-    use crate::fen::fen;
+    use std::{fmt::{self}, io::Empty, vec};
+    use crate::{fen::fen::{self, build_board_from_fen, Fen}, moves::moves::{get_protected_squares, Move}};
 
     #[derive(Debug)]
     pub enum Error {
@@ -57,7 +57,8 @@ pub mod chess {
         }
     }
     
-
+    #[derive(Debug)]
+    #[derive(PartialEq)]
     pub enum Color {
         White,
         Black,
@@ -77,39 +78,36 @@ pub mod chess {
         Knight,
         Empty,
     }
-
+    #[derive(Debug)]
     pub struct Square {
         pub piece: Piece,
-        rank : u8 ,
-        file : u8,
+        pub rank : u8 ,
+        pub file : u8,
     }
 
+    #[derive(Debug)]
     pub struct Piece {
         pub piece_type: PieceType,
         pub color: Color,
     }
 
-    pub struct Move{
-        takes : bool,
-        rank : Option<u8>,
-        file : Option<u8>,
-        destination : (u8 , u8),
-    }
-
     pub struct Board {
         pub squares: Vec<Square>,
+        pub squares_seen_by_white : u64,
+        pub squares_seen_by_black : u64,
         pub moves : Vec<Move>,
+        pub fen : Fen,
     }
 
     impl Board {
-        fn construct_board_vector() -> Vec<Square> {
+        pub fn construct_board_vector() -> Vec<Square> {
             let mut sqaures: Vec<Square> = vec![];
             for rank in 1..9 {
                 for file in 1..9 {
                     let piece = Piece {
                         piece_type: PieceType::Empty,
                         color: Color::NoColor,
-                    };
+                    };  
                     sqaures.push(Square {
                         piece,
                         rank,
@@ -120,52 +118,65 @@ pub mod chess {
             sqaures
         }
 
-        pub fn build() -> Board {
-            let mut board: Vec<Square> = Self::construct_board_vector();
-
-            let fen: String = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string();
-            let fen = fen::get_fen_string(&fen);
-
-            let mut current_rank: u8 = 8;
-            for pieces_in_rank in fen {
-                
-                let mut file: u8 = 1;
-                for piece in pieces_in_rank.chars() {
-                    
-                    if piece.is_ascii_digit() {
-                        file += u8::try_from(piece.to_digit(10).unwrap())
-                            .ok()
-                            .expect("this will never happen");
-                        continue;
-                    }
-
-                    let color = if piece.is_ascii_uppercase() {
-                        Color::White
-                    } else {
-                        Color::Black
-                    };
-
-                    let piece = Piece {
-                        piece_type: fen::get_piece_from_char(&piece).unwrap_or_else(|err| {
-                                panic!("couldn't parse the char to a piece : {err}");
-                        }),
-                        color: color,
-                    };
-
-                    board[(((current_rank - 1) as usize) << 3) + ((file - 1) as usize)] = Square {
-                        piece: piece,
-                        rank : current_rank,
-                        file ,
-                    };
-                    file += 1;
+        pub fn build_from_fen(fen : String) -> Board {
+            let fen_vector : Vec<&str>  = fen.split_ascii_whitespace().into_iter().collect();
+            let fen = Fen {
+                pieces : fen_vector[0].to_string(),
+                turn : fen_vector[1].chars().next().unwrap(),
+                castling : fen_vector[2].to_string(),
+                en_passant : fen_vector[3].to_string(),
+                half_moves : fen_vector[4].parse().unwrap(),
+                full_moves : fen_vector[5].parse().unwrap()
+            };
+            let squares = build_board_from_fen(&fen.pieces);
+            let mut squares_seen_by_black = 0;
+            let mut squares_seen_by_white = 0;
+            for square in &squares {
+                if square.piece.piece_type == PieceType::Empty {
+                    continue;
                 }
 
-                current_rank -= 1;
+                if square.piece.color == Color::Black {
+                    squares_seen_by_black |= get_protected_squares(&square, &squares);
+                }else {
+                    squares_seen_by_white |= get_protected_squares(&square, &squares);
+                }
+
+            }
+            Board {
+                squares : build_board_from_fen(&fen.pieces),
+                squares_seen_by_white,
+                squares_seen_by_black,
+                moves : vec![],
+                fen,
+            }
+        }
+
+        pub fn build() -> Board {
+            let mut squares_seen_by_white: u64 = 0;
+            let mut squares_seen_by_black: u64 = 0;
+            
+            let fen : Fen = fen::start_fen();
+            let squares: Vec<Square> = build_board_from_fen(&fen.pieces);
+            for square in &squares {
+                if square.piece.piece_type == PieceType::Empty {
+                    continue;
+                }
+
+                if square.piece.color == Color::Black {
+                    squares_seen_by_black |= get_protected_squares(&square, &squares);
+                }else {
+                    squares_seen_by_white |= get_protected_squares(&square, &squares);
+                }
+
             }
 
             Board {
-                squares: board,
+                squares,
                 moves : vec![] , 
+                squares_seen_by_black, 
+                squares_seen_by_white, 
+                fen,
             }
         }
 
@@ -176,9 +187,6 @@ pub mod chess {
 
     }
 
-    impl Square {
-        
-    }
 
 }
 

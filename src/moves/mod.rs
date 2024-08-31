@@ -5,10 +5,12 @@ pub mod moves {
         fen::fen::Fen,
     };
 
+    #[derive(Debug)]
     pub struct Move {
         takes: bool,
         rank: Option<u8>,
         file: Option<u8>,
+        source : (u8 , u8),
         destination: (u8, u8),
     }
 
@@ -45,6 +47,7 @@ pub mod moves {
                 takes: true,
                 rank: None,
                 file: None,
+                source : (square.rank , square.file),
                 destination: (rank as u8, file as u8),
             });
         }
@@ -53,6 +56,7 @@ pub mod moves {
             takes: false,
             rank: None,
             file: None,
+            source : (square.rank , square.file),
             destination: (rank as u8, file as u8),
         })
     }
@@ -77,6 +81,7 @@ pub mod moves {
                     takes: true,
                     rank: None,
                     file: None,
+                    source : (square.rank , square.file),
                     destination: (rank as u8, file as u8),
                 });
             } else {
@@ -88,6 +93,7 @@ pub mod moves {
                     takes: false,
                     rank: None,
                     file: None,
+                    source : (square.rank , square.file),
                     destination: (rank as u8, file as u8),
                 });
             } else {
@@ -96,7 +102,19 @@ pub mod moves {
         }
     }
 
-    pub fn get_moves(square: &Square, board: &Board, fen: &Fen) -> Vec<Move> {
+    pub fn get_moves(board: &Board , color : &Color) -> Vec<Move>{
+        let mut result: Vec<Move> = vec![];
+        for square in &board.squares {
+            if square.piece.color != *color {
+                continue;
+            }
+            let mut moves = get_move(&square, &board, &board.fen);
+            result.append(&mut moves);
+        }
+        result
+    }
+
+    pub fn get_move (square: &Square, board: &Board , fen: &Fen) -> Vec<Move> {
         let vector = match square.piece.piece_type {
             PieceType::King => {
                 get_king_moves(&square, &board, fen)
@@ -161,7 +179,7 @@ pub mod moves {
             let new_rank = (square.rank as i8) + KNIGHT_MOVES_RANK[index];
 
             if !legal_move(new_rank, new_file) {
-                break;
+                continue;
             }
 
             let the_move: Option<Move> = create_move(square, board, new_file, new_rank);
@@ -217,6 +235,7 @@ pub mod moves {
                 if the_move.is_none() {
                     break;
                 }
+                
                 moves.push(the_move.unwrap())
             }
         }
@@ -277,6 +296,9 @@ pub mod moves {
             }
         }
 
+        if fen.en_passant == '-'.to_string() {
+            return moves;
+        }
         let en_passent_file = fen.en_passant.as_bytes()[0] - 96;
         let en_passent_rank = fen.en_passant.as_bytes()[1] - 48;
 
@@ -285,6 +307,7 @@ pub mod moves {
                 takes : true,
                 rank : None,
                 file : None,
+                source : (square.rank , square.file),
                 destination: (en_passent_file , en_passent_rank),
             })
         }
@@ -294,10 +317,152 @@ pub mod moves {
                 takes : true,
                 rank : None,
                 file : None,
+                source : (square.rank , square.file),
                 destination: (en_passent_file , en_passent_rank),
             })
         }
 
         moves
     }
+
+    
+    pub fn get_protected_squares(square: &Square, squares : &Vec<Square>) -> u64 {
+        let covered = match square.piece.piece_type {
+            PieceType::King => {
+                covered_by_king(&square)
+            }
+            PieceType::Bishop => {
+                covered_by_bishop(&square , &squares)
+            },
+            PieceType::Knight => {
+                covered_by_knight(&square)
+            },
+            PieceType::Queen => {
+                covered_by_queen(&square , &squares)
+            },
+            PieceType::Pawn => {
+                covered_by_pawn(&square)
+            },
+            PieceType::Rook => {
+                covered_by_rook(square , &squares)
+            },
+            PieceType::Empty => {
+                0
+            }
+        };
+        covered
+    }
+
+    pub fn covered_by_pawn(square: &Square) -> u64 {
+        let mut covered :u64 = 0;
+        let direction_based_on_color: i8 = if square.piece.color == Color::White {
+            1
+        } else {
+            -1
+        };
+
+        let new_rank = square.rank as i8 + direction_based_on_color;
+        
+        if legal_move(new_rank, (square.file + 1) as i8) {
+            let index = ((new_rank << 3) + square.file as i8 + 1) as u64;
+            covered |= 1 << index;
+        }
+
+        if legal_move(new_rank, square.file as i8 - 1) {
+            let index = ((new_rank << 3) + square.file as i8 - 1) as u64;
+            covered |= 1 << index;
+        }
+
+        covered
+    }
+
+    pub fn covered_by_queen(square: &Square , squares : &Vec<Square>) -> u64 {
+        covered_by_bishop(square, &squares) | covered_by_rook(square, &squares)
+    }
+
+    pub fn covered_by_rook(square: &Square , squares : &Vec<Square>) -> u64 {
+        let mut covered : u64 = 0 ;
+        for direction in 0..4 {
+            let direction = direction as usize;
+            for shift in 1..8 {
+                let new_file = (square.file as i8) + shift * ROOK_MOVES_FILE[direction];
+                let new_rank = (square.rank as i8) + shift * ROOK_MOVES_RANK[direction];
+                if !legal_move(new_rank, new_file) {
+                    break;
+                }
+
+                let index: u64 = (((new_rank - 1) << 3) + new_file - 1) as u64;
+                covered |= 1 << index; 
+                
+                if squares.get(index as usize).unwrap().piece.piece_type != PieceType::Empty {
+                    break;
+                }
+            }
+        }
+        covered
+    }
+
+    pub fn covered_by_knight(square: &Square) -> u64 {
+       let mut covered : u64 = 0;
+
+        for index in 1..8 {
+            let index = index as usize;
+            let new_file = (square.file as i8) + KNIGHT_MOVES_FILE[index];
+            let new_rank = (square.rank as i8) + KNIGHT_MOVES_RANK[index];
+
+            if !legal_move(new_rank, new_file) {
+                continue;
+            }
+            
+            let index: u64 = (((new_rank - 1) << 3) + new_file - 1) as u64;
+            covered |= 1 << index; 
+        }
+
+        covered
+    }
+
+    pub fn covered_by_bishop(square: &Square , squares : &Vec<Square> ) -> u64{
+        let mut covered : u64 = 0;
+
+        for direction in 0..4 {
+            let direction = direction as usize;
+            for shift in 1..8 {
+                let new_file = (square.file as i8) + shift * BISHOP_MOVES_FILE[direction];
+                let new_rank = (square.rank as i8) + shift * BISHOP_MOVES_RANK[direction];
+
+                if !legal_move(new_rank, new_file) {
+                    break;
+                }
+
+                let index: u64 = (((new_rank - 1) << 3) + new_file - 1) as u64;
+                covered |= 1 << index;
+
+                if squares.get(index as usize).unwrap().piece.piece_type != PieceType::Empty {
+                    break;
+                }
+
+
+            }
+        }
+        covered
+    }
+
+    
+    pub fn covered_by_king(square: &Square ) -> u64{
+        let mut covered: u64 = 0;
+        for index in 0..8 {
+            let new_rank = square.rank as i8 + KING_MOVES_RANK[index];
+            let new_file = square.file as i8 + KING_MOVES_FILE[index];
+
+            if !legal_move(new_rank, new_file) {
+                continue;
+            }
+            let index = (((new_rank - 1) << 3) + new_file - 1) as u64;
+            covered |= 1 << index;
+                
+        }
+        covered
+    }
+
+
 }
