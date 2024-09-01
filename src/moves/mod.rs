@@ -6,12 +6,14 @@ pub mod moves {
     };
 
     #[derive(Debug)]
+    #[derive(Clone, Copy)]
     pub struct Move {
-        takes: bool,
-        rank: Option<u8>,
-        file: Option<u8>,
-        source : (u8 , u8),
-        destination: (u8, u8),
+        pub takes: bool,
+        pub castle : Option<bool>,
+        pub rank: Option<u8>,
+        pub file: Option<u8>,
+        pub source : (u8 , u8),
+        pub destination: (u8, u8),
     }
 
     pub const KING_MOVES_FILE: [i8; 8] = [0, 0, 1, 1, 1, -1, -1, -1];
@@ -45,6 +47,7 @@ pub mod moves {
         if destination.piece.color != Color::NoColor {
             return Some(Move {
                 takes: true,
+                castle : None,
                 rank: None,
                 file: None,
                 source : (square.rank , square.file),
@@ -54,6 +57,7 @@ pub mod moves {
 
         Some(Move {
             takes: false,
+            castle : None,
             rank: None,
             file: None,
             source : (square.rank , square.file),
@@ -79,6 +83,7 @@ pub mod moves {
             if destination.piece.color != Color::NoColor {
                 return Some(Move {
                     takes: true,
+                    castle : None,
                     rank: None,
                     file: None,
                     source : (square.rank , square.file),
@@ -91,6 +96,7 @@ pub mod moves {
             if destination.piece.color == Color::NoColor {
                 return Some(Move {
                     takes: false,
+                    castle : None,
                     rank: None,
                     file: None,
                     source : (square.rank , square.file),
@@ -305,6 +311,7 @@ pub mod moves {
         if rank as i8 + direction_based_on_color == en_passent_rank as i8 && file as i8 - 1 == en_passent_file as i8 {
             moves.push(Move{
                 takes : true,
+                castle : None,
                 rank : None,
                 file : None,
                 source : (square.rank , square.file),
@@ -315,6 +322,7 @@ pub mod moves {
         if rank as i8 + direction_based_on_color == en_passent_rank as i8 && file as i8 + 1 == en_passent_file as i8 {
             moves.push(Move{
                 takes : true,
+                castle : None,
                 rank : None,
                 file : None,
                 source : (square.rank , square.file),
