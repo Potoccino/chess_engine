@@ -1,13 +1,14 @@
 
 
 pub mod chess {
-    use std::{fmt::{self}, io::Empty, vec};
+    use std::{f32::consts::E, fmt::{self}, io::Empty, vec};
     use crate::{fen::fen::{self, build_board_from_fen, Fen}, moves::moves::{get_protected_squares, Move}};
 
     #[derive(Debug)]
     pub enum Error {
         InvalidPieceChar(char),
         InvalidPieceType(PieceType),
+        InvalidInput(String),
     }
 
     impl fmt::Display for Color {
@@ -39,6 +40,7 @@ pub mod chess {
             match self {
                 Error::InvalidPieceChar(c) => write!(f, "Invalid piece character: '{}'", c),
                 Error::InvalidPieceType(c) => write!(f, "Invalid piece Type: '{}'", c),
+                Error::InvalidInput(s ) =>write!(f, "Invalid Input: '{}'", s),
             }
         }
     }

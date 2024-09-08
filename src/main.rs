@@ -10,4 +10,6 @@ fn main() {
     let board : chess::Board = chess::Board::build();
     run(&board);
 
+
+    println!("i a here");
 }
