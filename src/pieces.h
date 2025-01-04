@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <cctype>
-
+#include <utility>
+#include "bitBoard.h"
+#include <string>
+#include <iostream>
 
 typedef unsigned short u_short;
 
@@ -97,25 +100,38 @@ char convertPieceToChar(int piece , bool color = 1)
 BitBoard convertFENstringToBoard(const std::string &FEN){
     int currnet_counter_squares = 0;
     int i = 0;
+    BitBoard board = BitBoard();
     for(int index : {56 , 48 , 40 , 32 , 24 , 16 , 8 , 0})
     {
-        if(i >= FEN.size() || FEN[i] == '/')
-        {
-            i += 1;
-            break;
-        }
 
-        if(isdigit(FEN[i])){
-            index += FEN[i] - '0';
-        }else{
-            auto [piece , color] = convertCharToPiece(FEN[i]);
-            if(color)
-            {
-                
+        for( ; i < FEN.size() && FEN[i] != '/' ; i += 1)
+        {
+            if(isdigit(FEN[i])){
+                index += int(FEN[i] - '0');
+            }else{
+                auto [piece , color] = convertCharToPiece(FEN[i]);
+                if(color)
+                {
+                    board.white_pieces[piece] |= 1ll << index;
+                }
+                else
+                {
+                    board.black_pieces[piece] |= 1ll << index;
+                }
+                index += 1;
             }
         }
-
+        i ++ ;
     }
+
+    for(int i = 0 ; i < 7 ; i += 1)
+    {
+        board.black_pieces[4] |= board.black_pieces[i];
+        board.white_pieces[4] |= board.white_pieces[i];
+    }
+
+
+    return board;
 
 }
 
@@ -153,6 +169,7 @@ std::string ConvertBoardToFENstring(BitBoard board)
             }
         }
 
+
         // the current index is empty
         if (found_piece == 4)
         {
@@ -170,11 +187,12 @@ std::string ConvertBoardToFENstring(BitBoard board)
             {
                 FEN += char('0' + free_squares);
             }
-            else
+            
+            if(found_piece != 4)
             {
-
                 FEN += convertPieceToChar(found_piece, color);
             }
+
             FEN += '/';
             free_squares = 0;
             continue;

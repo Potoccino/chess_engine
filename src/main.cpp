@@ -2,6 +2,7 @@
 #include "bitBoard.h"
 #include "pieces.h"
 #include <regex>
+#include <cassert>
 
 const std::bitset<16> INVALID_INPUT = 0;
 
@@ -95,9 +96,6 @@ void run(BitBoard bitboard, bool turn)
 
 int main()
 {
-
-    BitBoard board = BitBoard();
-    std::cout << ConvertBoardToFENstring(board) << '\n';
-    // run(board , true);
+        
     return 0;
-}
+}   
