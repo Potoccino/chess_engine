@@ -3,15 +3,19 @@
 #include "pieces.h"
 #include <regex>
 #include <cassert>
+#include "attackMaps.h"
+
+int main()
+{
+    generateAttackMaps();
+}
 
 const std::bitset<16> INVALID_INPUT = 0;
-
-
 
 // a move is a 16 bit bitset
 // 6 bits for the source
 // 6 bits for the destination
-// 3 bits for the taken piece
+// 3 bits in case of a promotion
 // 1 bit for the color
 std::bitset<16> read_move(const BitBoard bitBoard, bool turn)
 {
@@ -54,28 +58,18 @@ std::bitset<16> read_move(const BitBoard bitBoard, bool turn)
         promotion_piece = NOTHING_PROMOTED;
     }
 
-    std::bitset<16> final_move;
+    const std::bitset<64>* source_pieces = turn ? &bitBoard.white.occupied : &bitBoard.black.occupied;
 
-    u_short taken_piece = NOTHING_TAKEN;
-    const std::bitset<64> *piece_set = turn ? bitBoard.white_pieces : bitBoard.black_pieces;
-    for (int i = 0; i < 6; i += 1)
+
+    if (!source_pieces->test(source_index) || source_pieces->test(destination_index))
     {
-        if (i == 4)
-        {
-            // skip all posistions array
-            continue;
-        }
-
-        if (piece_set[i].test(destination_index))
-        {
-            taken_piece = i;
-            break;
-        }
+        return INVALID_INPUT;
     }
 
+    std::bitset<16> final_move;
     final_move |= source_index;
     final_move |= destination_index << 6;
-    final_move |= taken_piece << 12;
+    final_move |= promotion_piece << 12;
     final_move |= turn << 15;
 
     return final_move;
@@ -91,11 +85,8 @@ void run(BitBoard bitboard, bool turn)
         exit(-1);
     }
 
+    //generate moves;
+
     std::cout << move << '\n';
 }
 
-int main()
-{
-        
-    return 0;
-}   

@@ -1,4 +1,3 @@
-#pragma once
 # include <cstdint>
 # include <bitset>
 
@@ -7,13 +6,29 @@
 // 1 is the knights
 // 2 is the bishops
 // 3 is the queens
-// 4 is the map of taken positions
+// 4 is the map of occupied positions
 // 5 is the pawns
 // 6 is the kings
 
-struct BitBoard{
-    std::bitset<64> black_pieces[7];
-    std::bitset<64> white_pieces[7];
+struct PieceSet
+{
+    std::bitset<64> rooks;
+    std::bitset<64> knights;
+    std::bitset<64> bishops;
+    std::bitset<64> queens;
+    std::bitset<64> kings;
+    std::bitset<64> pawns;
+    std::bitset<64> occupied;
+    std::bitset<64> doublePushPawns;
+    std::bitset<64> castleRooks;
+};
+
+
+struct BitBoard
+{       
+    PieceSet white;
+    PieceSet black;
+
 
     BitBoard()
     {
