@@ -1,6 +1,6 @@
 #include <iostream>
-#include "bitBoard.h"
-#include "attackMaps.h"
+#include <vector>
+#include <bitset>
 
 using namespace std;
 
@@ -8,14 +8,12 @@ using namespace std;
 
 int main()
 {
-    for(int i = 7 ; i >= 0; i -= 1)
+    vector<int> moves = {1 , 2 , 3};
+    vector<int> moves2 = {4 , 5 , 6};
+    moves.insert(moves.end() , moves2.begin(), moves2.end());
+    for(auto i : moves)
     {
-        for(int j = 0 ; j < 8 ; j +=1)
-        {
-            cout << pawnCaptures[1][6][(i << 3) + j] << " ";
-        }
-        cout << '\n';
+        cout << i << '\n';
     }
-
 }
 

@@ -2,10 +2,12 @@
 
 
 make:
-	g++ main.cpp bitBoard.cpp bitBoard.h pieces.h -o testMe
-	
+	g++ main.cpp moveGenerator.cpp engine.cpp attackMaps.cpp bitBoard.cpp -o waleed
 
 
-testFENStrings:
-	g++ test.cpp bitBoard.cpp bitBoard.h pieces.h -o fentest	
+
+test:
+	g++ moveGenTest.cpp moveGenerator.cpp engine.cpp attackMaps.cpp bitBoard.cpp -o test
+
+
 

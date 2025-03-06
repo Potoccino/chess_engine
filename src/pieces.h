@@ -1,9 +1,4 @@
-// #include <stdlib.h>
-// #include <cctype>
-// #include <utility>
-// #include "bitBoard.h"
-// #include <string>
-// #include <iostream>
+
 #include <bitset>
 
 typedef unsigned short u_short;

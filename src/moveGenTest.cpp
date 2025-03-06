@@ -1,5 +1,6 @@
 #include "moveGenerator.h"
 #include "attackMaps.h"
+#include "engine.h"
 #include <iostream>
 
 void printMoves(const std::vector<std::bitset<16>>& moves) {
@@ -23,16 +24,17 @@ void testStriaghtSlidingPiece()
     PieceSet enemey_set;
     std::bitset<64> occupied;
 
-    ally_set.occupied |= 1ll << 33;
-    ally_set.occupied |= 1ll << 27;
+    ally_set.occupied |= 1ll << 7;
+    ally_set.occupied |= 1ll << 15;
+    ally_set.occupied |= 1ll << 3;
 
-    enemey_set.knights |= 1ll << 51;
-    enemey_set.pawns |= 1ll << 38;
+    // enemey_set.knights |= 1ll << 51;
+    // enemey_set.pawns |= 1ll << 38;
 
-    enemey_set.occupied |= 1ll << 51 | 1ll << 38;
+    // enemey_set.occupied |= 1ll << 51 | 1ll << 38;
     occupied = enemey_set.occupied | ally_set.occupied;
 
-    std::bitset<64> piece = 1ll << 35;
+    std::bitset<64> piece = 1ll << 7;
 
     std::vector<std::bitset<16>> moves = iteratePossibleMoves(
         piece, &enemey_set,
@@ -93,7 +95,7 @@ void testPawnOnePush()
     &enemey_set,
     &ally_set,
     generatePawnMoves,
-    occupied  , 1);
+    &enemey_set , occupied  , 1);
 
 
     printMoves(moves);
@@ -122,6 +124,7 @@ void testPawnCapture()
     &enemey_set,
     &ally_set,
     generatePawnMoves,
+    &enemey_set,
     occupied  , 1);   
 
     printMoves(moves);
@@ -150,6 +153,7 @@ void testPawnEnpessantCapture()
     &enemey_set,
     &ally_set,
     generatePawnMoves,
+    &enemey_set,
     occupied  , 1);   
 
     printMoves(moves);
@@ -217,11 +221,34 @@ void testKingCastle()
 }
 
 
+void testKingInCheck()
+{
+    bitBoard *board = ( bitBoard *)malloc(sizeof(bitBoard));
+    PieceSet ally_set;
+    PieceSet enemey_set;
+    std::bitset<64> occupied;
+    ally_set.kings |= 1ll << 28;
+    enemey_set.pawns |= 1ll << 35;
+    occupied = enemey_set.occupied | ally_set.occupied;
+
+    board->black = enemey_set;
+    board->white = ally_set;
+
+    std::bitset<64> king = 1ll << 28;
+    
+    bool res = kingInCheck(board , false);
+
+    std::cout << res << '\n';
+
+    free(board);
+}
+
 int main()
 {
     
     generateAttackMaps();
 
-    testKingCastle();
+    testKingInCheck();    
+
 
 }

@@ -5,39 +5,8 @@
 #include <iostream>
 #include <functional>
 
-// void print_moves(bitset<64> attacks , char* name , FILE * file)
-// {
 
-//     fprintf(file , "%s : \n" , name);
-//     for(int i = 7 ; i >= 0 ; i-= 1)
-//     {
-//         for(int j = 0 ; j < 8 ; j += 1)
-//         {
-//             fprintf(file , "%c " , (attacks[i * 8 + j] ? '1' : '0'));
-//         }
-//         fprintf(file ,"\n");
-//     }
-
-//     fprintf(file , "\n");
-//     fprintf(file , "\n");
-// }
-
-const std::bitset<16> PIECES[6]{
-    1 << 12, 2 << 12, 3 << 12, 4 << 12, 5 << 12, 6 << 12
-};
-
-inline ushort getCords(size_t index)
-{
-    return index >> 3 | ((index & 7) << 3);
-}
-
-inline std ::bitset<16> moveFromSrcAndDis(size_t src, size_t dis)
-{
-    return getCords(src) | (getCords(dis) << 6);
-}
-    
-
-std::bitset<64> generateDiagonalMoves(size_t index , PieceSet* enemyPieceSet , const std::bitset<64> &occupancy) noexcept
+std::bitset<64> generateDiagonalMoves(size_t index , const std::bitset<64> occupancy) noexcept
 {
     std::bitset<64> moves;
     for (auto direction : {0, 1, 2, 3})
@@ -45,7 +14,7 @@ std::bitset<64> generateDiagonalMoves(size_t index , PieceSet* enemyPieceSet , c
         const std::bitset<64> attacks = diagonalRays[direction][index];
         const unsigned long long blockers = (attacks & occupancy).to_ullong();
         int need_lsb = (direction == 0 || direction == 3);
-        size_t blocker = need_lsb * __builtin_ctzll(blockers) + (1 - need_lsb) * (63 - __builtin_clzll(blockers));
+        size_t blocker = need_lsb * __builtin_ctzll(blockers) + (1ll - need_lsb) * (63 - __builtin_clzll(blockers));
         moves |= (attacks ^ diagonalRays[direction][blocker]);
     }
 
@@ -53,7 +22,7 @@ std::bitset<64> generateDiagonalMoves(size_t index , PieceSet* enemyPieceSet , c
 }
 
 
-std::bitset<64> generateStraightMoves(size_t index , PieceSet* enemyPieceSet , const std::bitset<64> &occupancy ) noexcept
+std::bitset<64> generateStraightMoves(size_t index , const std::bitset<64> occupancy ) noexcept
 {
     std::bitset<64> moves;
     for (auto direction : {0, 1, 2, 3})
@@ -61,7 +30,7 @@ std::bitset<64> generateStraightMoves(size_t index , PieceSet* enemyPieceSet , c
         const std::bitset<64> attacks = straightRays[direction][index];
         const unsigned long long blockers = (attacks & occupancy).to_ullong();
         int need_lsb = (direction == 0 || direction == 1);
-        size_t blocker = need_lsb * __builtin_ctzll(blockers) + (1 - need_lsb) * (63 - __builtin_clzll(blockers));
+        size_t blocker = need_lsb * __builtin_ctzll(blockers) + (1ll - need_lsb) * (63 - __builtin_clzll(blockers));
         moves |= (attacks ^ straightRays[direction][blocker]);
     }
     
@@ -69,8 +38,7 @@ std::bitset<64> generateStraightMoves(size_t index , PieceSet* enemyPieceSet , c
 }
 
 
-
-std::bitset<64> generateKingMoves(size_t index , PieceSet* enemyPieceSet ,const std::bitset<64> &occupancy , const std::bitset<64> castleRooks , bool inCheck = false) 
+std::bitset<64> generateKingMoves(size_t index ,const std::bitset<64> occupancy , const std::bitset<64> castleRooks , bool inCheck = false) 
 {
 
     std::bitset<64> moves = kingAttacks[index];
@@ -81,7 +49,6 @@ std::bitset<64> generateKingMoves(size_t index , PieceSet* enemyPieceSet ,const 
 
     if(index == 4)
     {
-        std :: cout << castleRooks.test(0) << '\n';
         if(castleRooks.test(0) && !(std::bitset<64>(1ll << 1 | 1ll << 2 | 1ll << 3) & occupancy).any())
         {
             moves.set(2);
@@ -108,13 +75,13 @@ std::bitset<64> generateKingMoves(size_t index , PieceSet* enemyPieceSet ,const 
 }
 
 
-inline std::bitset<64> generateKnightMoves(size_t index , PieceSet* enemyPieceSet) 
+std::bitset<64> generateKnightMoves(size_t index) 
 {
    return knightJumps[index];
 }
 
 
-std::bitset<64> generatePawnMoves(size_t index , PieceSet* enemyPieceSet , const std::bitset<64> &occupancy , bool color )
+std::bitset<64> generatePawnMoves(size_t index , PieceSet* enemyPieceSet , const std::bitset<64> occupancy , bool color )
 {
     std::bitset<64> pawnOnePush =  pawnPush[color][index] & ~(occupancy);;
     
@@ -146,7 +113,7 @@ void iterateMoveMap(std::vector<std::bitset<16>> &moves,
     size_t size = movesForPiece.size();
     while ((disIndex = movesForPiece._Find_first() ) != size )
     {
-        std::bitset<16> move = moveFromSrcAndDis(srcIndex, disIndex);
+        std::bitset<16> move = srcIndex | (disIndex << 6);
         ushort distance = abs(disIndex - srcIndex) ;
         if(isSpecial == 1)
         {

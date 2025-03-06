@@ -180,5 +180,5 @@ void generateAttackMaps()
     generateStraightRays();
     generateKingAttacks();
     generatePawnPushesAndCaptures();
-    generateKingAttacks();
+    generateKnightJumps();
 }
